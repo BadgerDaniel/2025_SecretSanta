@@ -12,16 +12,17 @@ from docx import Document
 names = ["Ariel", "Kurt", "Scott", "Linda", "Daniel"]
 
 # Directional only — reverse is allowed
-last_year_gifts = {
-    "Kurt": "Ariel",
-    "Ariel": "Kurt",
-    "Scott": "Ariel",
-    "Linda": "Scott",
-    "Daniel": "Linda",
-    "Ariel": "Daniel"
-}
+# Use list of tuples to handle cases where one person may have multiple blocked recipients
+last_year_gifts = [
+    ("Kurt", "Ariel"),
+    ("Ariel", "Kurt"),
+    ("Scott", "Ariel"),
+    ("Linda", "Scott"),
+    ("Daniel", "Linda"),
+    ("Ariel", "Daniel")
+]
 
-blocked_pairs = set(last_year_gifts.items())
+blocked_pairs = set(last_year_gifts)
 
 # ===========================
 # Pairing Generator
@@ -33,16 +34,24 @@ def generate_valid_pairs():
     seed = int(time.time() * 1000000) + secrets.randbits(32)
     random.seed(seed)
     
-    for _ in range(10000):
+    for attempt in range(10000):
         shuffled = names.copy()
         random.shuffle(shuffled)
         pairs = dict(zip(names, shuffled))
-        if all(
-            giver != receiver and 
-            (giver, receiver) not in blocked_pairs
-            for giver, receiver in pairs.items()
-        ):
+        
+        # Validate: no self-gifting and no blocked pairs
+        is_valid = True
+        for giver, receiver in pairs.items():
+            if giver == receiver:
+                is_valid = False
+                break
+            if (giver, receiver) in blocked_pairs:
+                is_valid = False
+                break
+        
+        if is_valid:
             return pairs
+    
     return None
 
 # ===========================
@@ -85,6 +94,14 @@ with st.sidebar:
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.rerun()
+    
+    # Debug: Show blocked pairs
+    with st.expander("🔒 Blocked Pairings (Last Year)"):
+        if blocked_pairs:
+            for giver, receiver in sorted(blocked_pairs):
+                st.text(f"{giver} → {receiver}")
+        else:
+            st.text("No blocked pairings")
 
 if pairs is None:
     st.error("Could not generate a valid Secret Santa pairing.")
