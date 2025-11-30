@@ -1,5 +1,7 @@
 import streamlit as st
 import random
+import secrets
+import time
 from io import BytesIO
 from docx import Document
 
@@ -26,6 +28,11 @@ blocked_pairs = set(last_year_gifts.items())
 # ===========================
 
 def generate_valid_pairs():
+    # Use cryptographically secure random seed for true randomness
+    # Combine time and secrets for maximum randomness
+    seed = int(time.time() * 1000000) + secrets.randbits(32)
+    random.seed(seed)
+    
     for _ in range(10000):
         shuffled = names.copy()
         random.shuffle(shuffled)
@@ -60,6 +67,7 @@ if "pairs" not in st.session_state:
     st.session_state.pairs = generate_valid_pairs()
     st.session_state.step = 0
     st.session_state.revealed = False
+    st.session_state.initialized = True
 
 pairs = st.session_state.pairs
 
@@ -68,6 +76,15 @@ pairs = st.session_state.pairs
 # ===========================
 
 st.title("🎅 Secret Santa (Sequential Reveal Version)")
+
+# Add reset button in sidebar for generating new pairings
+with st.sidebar:
+    st.header("Options")
+    if st.button("🔄 Generate New Pairings", help="This will reset and generate completely new random pairings"):
+        # Clear session state to force regeneration
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.rerun()
 
 if pairs is None:
     st.error("Could not generate a valid Secret Santa pairing.")
