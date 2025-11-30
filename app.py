@@ -75,7 +75,7 @@ def generate_docx(pairs):
 if "pairs" not in st.session_state:
     st.session_state.pairs = generate_valid_pairs()
     st.session_state.step = 0
-    st.session_state.revealed = False
+    st.session_state.revealed = {}  # Track revealed state per step
     st.session_state.initialized = True
 
 pairs = st.session_state.pairs
@@ -130,12 +130,14 @@ if step >= len(names):
 # ===========================
 
 current_person = names[step]
+is_revealed = st.session_state.revealed.get(step, False)
 
 st.header(f"👤 {current_person}, it's your turn!")
 
-if not st.session_state.revealed:
-    if st.button("Reveal who you're gifting to"):
-        st.session_state.revealed = True
+if not is_revealed:
+    if st.button("Reveal who you're gifting to", key=f"reveal_{step}"):
+        st.session_state.revealed[step] = True
+        st.rerun()
 else:
     recipient = pairs[current_person]
     st.success(f"🎁 You are gifting to: **{recipient}**")
@@ -147,7 +149,7 @@ else:
     else:
         st.info("🏁 You're the last person!")
     
-    if st.button("Next person (hide this)"):
-        st.session_state.revealed = False
+    if st.button("Next person (hide this)", key=f"next_{step}"):
         st.session_state.step += 1
+        st.rerun()
 
